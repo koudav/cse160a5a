@@ -118,11 +118,11 @@ function main() {
     // OBJ HERE
 
 		const mtlLoader = new MTLLoader();
-		mtlLoader.load( './resources/objs/pokeball/pokeball.mtl', ( pokeball_mtl ) => {
+		mtlLoader.load( './resources/objs/pokeball/pokeball.mtl', ( mtl ) => {
 
 			mtl.preload();
 			const objLoader = new OBJLoader();
-			objLoader.setMaterials( pokeball_mtl );
+			objLoader.setMaterials( mtl );
 			objLoader.load( './resources/objs/pokeball/pokeball.obj', ( pokeball ) => {
                 pokeball.position.x = -0.5;
                 pokeball.position.y = 1;

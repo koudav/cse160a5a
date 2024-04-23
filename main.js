@@ -123,6 +123,7 @@ function main() {
 			mtl.preload();
 			const objLoader = new OBJLoader();
 			objLoader.setMaterials( mtl );
+            // pokeball by Jose Ramos [CC-BY] via Poly Pizza
 			objLoader.load( './resources/objs/pokeball/pokeball.obj', ( pokeball ) => {
                 pokeball.position.x = -0.5;
                 pokeball.position.y = 1;

@@ -1,21 +1,73 @@
+// imports also taken from cse160 discord
 import * as THREE from 'three';
-import { OBJLoader } from './OBJLoader.js';
-import { MTLLoader } from './MTLLoader.js';
+import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {MTLLoader} from 'three/addons/loaders/MTLLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
+
+class MinMaxGUIHelper {
+    constructor(obj, minProp, maxProp, minDif) {
+      this.obj = obj;
+      this.minProp = minProp;
+      this.maxProp = maxProp;
+      this.minDif = minDif;
+    }
+    get min() {
+      return this.obj[this.minProp];
+    }
+    set min(v) {
+      this.obj[this.minProp] = v;
+      this.obj[this.maxProp] = Math.max(this.obj[this.maxProp], v + this.minDif);
+    }
+    get max() {
+      return this.obj[this.maxProp];
+    }
+    set max(v) {
+      this.obj[this.maxProp] = v;
+      this.min = this.min;  // this will call the min setter
+    }
+    
+  }
+
+  const canvas = document.querySelector( '#c' );
+  const renderer = new THREE.WebGLRenderer( { antialias: true, castShadow:true, canvas } );
+
+  const fov = 90;
+  const aspect = 2; // the canvas default
+  const near = 0.1;
+  const far = 100;
+  const camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
+  
+  
+  const view1Elem = document.querySelector('#view1');
+  const view2Elem = document.querySelector('#view2');
+  const controls = new OrbitControls(camera, view1Elem);
+
+  const cameraHelper = new THREE.CameraHelper(camera);
+
+  function updateCamera() {
+    camera.updateProjectionMatrix();
+  }
 
 function main() {
-
-	const canvas = document.querySelector( '#c' );
-	const renderer = new THREE.WebGLRenderer( { antialias: true, castShadow:true, canvas } );
-
-	const fov = 90;
-	const aspect = 2; // the canvas default
-	const near = 0.1;
-	const far = 100;
-	const camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
-    camera.position.set(0, 1, 2);
+    camera.position.set(0, 2, -1);
 	camera.position.z = 3;
 
+    controls.target.set(0, 0, 1);
+    controls.update();
+
+    /*const gui = new GUI();
+    gui.add(camera, 'fov', 1, 180).onChange(updateCamera);
+    const minMaxGUIHelper = new MinMaxGUIHelper(camera, 'near', 'far', 0.1);
+    gui.add(minMaxGUIHelper, 'min', 0.1, 50, 0.1).name('near').onChange(updateCamera);
+    gui.add(minMaxGUIHelper, 'max', 0.1, 50, 0.1).name('far').onChange(updateCamera);*/
+
+    /*const controls = new OrbitControls(camera, canvas);
+    controls.target.set(0, 5, 0);
+    controls.update();*/
+
 	const scene = new THREE.Scene();
+    scene.add(cameraHelper);
 
 	/*const boxWidth = 1;
 	const boxHeight = 1;
@@ -57,20 +109,40 @@ function main() {
 		mesh.rotation.x = Math.PI * - .5;
 		scene.add( mesh );
 
-        renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = true;
 
     // LIGHTING HERE
-    const color = 0xFFFFFF;
-    const intensity = 20;
-    const light = new THREE.PointLight(color, intensity);
-    light.position.set(1.5, 1.5, 1.52);
-    light.castShadow = true;
-    scene.add(light);
-    // SHAPES HERE
-    
+    const amb_color = 0xFFFF44;
+    const amb_intensity = 1;
+    const amb_light = new THREE.AmbientLight(amb_color, amb_intensity);
+    scene.add(amb_light);
 
+    const dir_color = 0xFF3333;
+    const dir_intensity = 1;
+    const dir_light = new THREE.DirectionalLight(dir_color, dir_intensity);
+    dir_light.position.set(0, 10, 0);
+    dir_light.target.position.set(-2, 0, 0);
+    scene.add(dir_light);
+    scene.add(dir_light.target);
+
+    const helper = new THREE.DirectionalLightHelper(dir_light);
+    scene.add(helper);
+
+    const point_color = 0xFFFFFF;
+    const point_intensity = 10;
+    const point_light = new THREE.PointLight(point_color, point_intensity);
+    point_light.position.set(1.5, 1.5, 1.5);
+    point_light.castShadow = true;
+    scene.add(point_light);
+    // SHAPES HERE  
+    
+    // Image by Lumina Obscura from Pixabay
+    const skybox_texture = loader.load('./resources/images/nightskybox.jpg')
+    scene.background = skybox_texture;
+
+    // needs credit
     const cube1_texture = loader.load( './resources/images/redlizard.jpg' );
-	cube1_texture.colorSpace = THREE.SRGBColorSpace;
+	  cube1_texture.colorSpace = THREE.SRGBColorSpace;
 
     let cube1_lengths = [1, 1, 1];
     let cube1_coords = [1, 1, 1]; 
@@ -78,6 +150,25 @@ function main() {
     scene.add(cube1);
     shapes.push(cube1);
 
+    let cube2_texture = loader.load( './resources/images/gray.jpg' );
+    let cube2_lengths = [1, 1, 1];
+    let cube2_coords = [];
+    let cube2;
+    for (let i = 0; i < 20; ++i) {
+      cube2_coords = [2 * i * -0.2, 2, -i];
+      cube2 = makeCubeMesh(cube2_texture, cube2_lengths, cube2_coords);
+      scene.add(cube2);
+      shapes.push(cube2);
+    }
+
+    let cube3_texture = loader.load( './resources/images/gray.jpg' );
+    let cube3_lengths = [10, 0.2, 10];
+    let cube3_coords = [1, 5, 1];
+    const cube3 = makeCubeMesh(cube3_texture, cube3_lengths, cube3_coords);
+    scene.add(cube3);
+    //shapes.push(cube3);
+
+    // needs credit
     const cylinder1_texture = loader.load( './resources/images/blueturtle.webp' );
     cube1_texture.colorSpace = THREE.SRGBColorSpace;
 

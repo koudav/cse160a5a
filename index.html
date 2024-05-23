@@ -1,14 +1,42 @@
 <html>
     <head>
         <title>ThreeJS example</title>
-        <script  type="importmap">{
-            "imports": {
-                "three": "./three.module.js"
+        <!--importmap taken from cse160 discord-->
+        <script type="importmap"> 
+            {
+              "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+              }
             }
-        }</script>
+          </script>
+        </script>
+        <div class="split">
+                <div id="view1" tabindex="1"></div>
+                <div id="view2" tabindex="2"></div>
+         </div>
+          <style>
+                .split {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                }
+                .split>div {
+                width: 100%;
+                height: 100%;
+                }
+          </style>
     </head>
     <body>
         <canvas id="c"></canvas>
         <script type="module" src="./main.js"></script>
+        <script type="module">
+            import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+         </script>
+         <p>right click + hold to pan, left click + hold to rotate, scroll wheel to zoom</p>
+         <p>used dir light, point light, ambient light</p>
     </body>
 </html>

@@ -29,7 +29,14 @@ class MinMaxGUIHelper {
     
   }
 
+
+var g_binocularsEnabled = false;
+var g_zoomScalar = 0.8;
+
+
   const canvas = document.querySelector( '#c' );
+  canvas.width = 600;
+  canvas.height = 400;
   const renderer = new THREE.WebGLRenderer( { antialias: true, castShadow:true, canvas } );
 
   const fov = 90;
@@ -41,20 +48,22 @@ class MinMaxGUIHelper {
   
   const view1Elem = document.querySelector('#view1');
   const view2Elem = document.querySelector('#view2');
-  const controls = new OrbitControls(camera, view1Elem);
+  var controls = new OrbitControls(camera, view1Elem);
 
   const cameraHelper = new THREE.CameraHelper(camera);
 
   function updateCamera() {
     camera.updateProjectionMatrix();
   }
-
 function main() {
-    camera.position.set(0, 2, -1);
-	camera.position.z = 3;
+    camera.position.set(0, 3, 5);
 
-    controls.target.set(0, 0, 1);
+    controls.target.set(0, 3, 1);
     controls.update();
+
+    updateCamera();
+
+    g_binocularsEnabled = false;
 
     /*const gui = new GUI();
     gui.add(camera, 'fov', 1, 180).onChange(updateCamera);
@@ -66,8 +75,8 @@ function main() {
     controls.target.set(0, 5, 0);
     controls.update();*/
 
-	const scene = new THREE.Scene();
-    scene.add(cameraHelper);
+	var scene = new THREE.Scene();
+  //scene.add(cameraHelper);
 
 	/*const boxWidth = 1;
 	const boxHeight = 1;
@@ -75,6 +84,7 @@ function main() {
 	const geometry1 = new THREE.BoxGeometry( boxWidth, boxHeight, boxDepth );*/
 
 	const shapes = []; // just an array we can use to rotate the shapes
+  const planets = [];
 	const loader = new THREE.TextureLoader();
 
 	/*const texture1 = loader.load( 'https://threejs.org/manual/examples/resources/images/wall.jpg' );
@@ -92,7 +102,7 @@ function main() {
     scene.background = new THREE.Color(0x00033D);
 
     const planeSize = 40;
-		const texture = loader.load( 'https://threejs.org/manual/examples/resources/images/checker.png' );
+		const texture = loader.load( './resources/images/triangle_tiles.jpg' );
 		texture.wrapS = THREE.RepeatWrapping;
 		texture.wrapT = THREE.RepeatWrapping;
 		texture.magFilter = THREE.NearestFilter;
@@ -106,10 +116,35 @@ function main() {
 			side: THREE.DoubleSide,
 		} );
 		const mesh = new THREE.Mesh( planeGeo, planeMat );
-		mesh.rotation.x = Math.PI * - .5;
+		mesh.rotation.x = Math.PI * -0.5;
 		scene.add( mesh );
 
     renderer.shadowMap.enabled = true;
+
+    // EVENT LISTENERS
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'b') { // Press 'b' to toggle binoculars
+          toggleBinoculars();
+      }
+    });
+
+    controls.addEventListener('change', () => {
+      updateBinocularsPosition();
+    });
+
+    // FOG HERE
+    scene.fog = new THREE.Fog( 0x444466, 5, 25);
+
+    // TELESCOPE HERE
+    const binocularsOutlineGeometry = new THREE.PlaneGeometry(5, 2);
+    const binocularsOutlineMaterial = new THREE.MeshBasicMaterial({
+      map: new THREE.TextureLoader().load('./resources/images/telescope.png'),
+      transparent: true
+    });
+    const binocularsOutlineMesh = new THREE.Mesh(binocularsOutlineGeometry, binocularsOutlineMaterial);
+    scene.add(binocularsOutlineMesh);
+    binocularsOutlineMesh.visible = false;
 
     // LIGHTING HERE
     const amb_color = 0xFFFF44;
@@ -126,7 +161,7 @@ function main() {
     scene.add(dir_light.target);
 
     const helper = new THREE.DirectionalLightHelper(dir_light);
-    scene.add(helper);
+    //scene.add(helper);
 
     const point_color = 0xFFFFFF;
     const point_intensity = 10;
@@ -150,7 +185,7 @@ function main() {
     scene.add(cube1);
     shapes.push(cube1);
 
-    let cube2_texture = loader.load( './resources/images/gray.jpg' );
+    /*let cube2_texture = loader.load( './resources/images/gray.jpg' );
     let cube2_lengths = [1, 1, 1];
     let cube2_coords = [];
     let cube2;
@@ -159,7 +194,7 @@ function main() {
       cube2 = makeCubeMesh(cube2_texture, cube2_lengths, cube2_coords);
       scene.add(cube2);
       shapes.push(cube2);
-    }
+    }*/
 
     let cube3_texture = loader.load( './resources/images/gray.jpg' );
     let cube3_lengths = [10, 0.2, 10];
@@ -187,24 +222,46 @@ function main() {
     scene.add(sphere1);
     shapes.push(sphere1);
 
-    /*const sphere1_texture = loader.load( './resources/images/yellowrat.jpg' );
-    sphere1_texture.colorSpace = THREE.SRGBColorSpace;
+    let numPlanetTextures = 8;
 
-    let sphere1_lengths = [0.5, 12, 12];
-    let sphere1_coords = [1.5, -0.5, 0];
-    const sphere1 = makeSphereMesh(sphere1_texture, sphere1_lengths, sphere1_coords);
-    scene.add(sphere1);
-    shapes.push(sphere1);*/
+    let planetTexturesArr = [];
 
-    /*const cube2 = new THREE.Mesh( geometry1, material1 );
-    cube2.position.x = 0;
-	scene.add( cube2 );
-	//shapes.push( cube2 ); // add to our list of shapes to rotate
+    const jupiter_texture = loader.load('./resources/images/2k_jupiter.jpg');
+    const mars_texture = loader.load('./resources/images/2k_mars.jpg');
+    const mercury_texture = loader.load('./resources/images/2k_mercury.jpg');
+    const neptune_texture = loader.load('./resources/images/2k_neptune.jpg');
+    const saturn_texture = loader.load('./resources/images/2k_saturn.jpg');
+    const uranus_texture = loader.load('./resources/images/2k_uranus.jpg');
+    const venus_atmo_texture = loader.load('./resources/images/2k_venus_atmosphere.jpg');
+    const venus_surf_texture = loader.load('./resources/images/2k_venus_surface.jpg');
 
-    const cube3 = new THREE.Mesh( geometry1, material1 );
-    cube3.position.x = 1.5;
-	scene.add( cube3 );
-	//shapes.push( cube3 ); // add to our list of shapes to rotate*/
+    planetTexturesArr.push(jupiter_texture);
+    planetTexturesArr.push(mars_texture);
+    planetTexturesArr.push(mercury_texture);
+    planetTexturesArr.push(neptune_texture);
+    planetTexturesArr.push(saturn_texture);
+    planetTexturesArr.push(uranus_texture);
+    planetTexturesArr.push(venus_atmo_texture);
+    planetTexturesArr.push(venus_surf_texture);
+
+    let sphereRadVariance = 2.0;
+    let orbitRadVariance = 40.0;
+    let speedVariance = 20.0;
+    let heightVariance = 6.0;
+    let numPlanets = 64;
+
+    for (let i = 0; i < numPlanets; ++i) {
+      let sphereRadius = 1.0 + Math.random() * sphereRadVariance;
+      let orbitRadius = 10.0 + Math.random() * orbitRadVariance;
+      let height = 3.0 + Math.random() * heightVariance;
+      let speed = 1.0 + Math.random() * speedVariance * 0.1;
+      let color = "red";
+      let texture = planetTexturesArr[Math.floor(Math.random() * numPlanetTextures)];
+      var Planet2 = new Planet(sphereRadius, orbitRadius, height, speed, color, scene, texture);
+      Planet2.create();
+      planets.push(Planet2);
+      shapes.push(Planet2.mesh)
+    }
 
     // OBJ HERE
 
@@ -306,6 +363,33 @@ function main() {
 
 	}
 
+  
+  function toggleBinoculars() {
+    g_binocularsEnabled = !g_binocularsEnabled;
+    binocularsOutlineMesh.visible = !binocularsOutlineMesh.visible;
+    // Adjust camera position and zoom
+    if (g_binocularsEnabled) {
+        // Zoom in
+        camera.getWorldDirection(cameraDirection);
+        camera.position.add(cameraDirection.clone().multiplyScalar(g_zoomScalar));
+        renderer.render( scene, camera );
+        camera.near += g_zoomScalar-0.1;
+        updateCamera();
+        controls.enabled = false;
+    } else {
+        // Zoom out
+        camera.getWorldDirection(cameraDirection);
+        camera.position.sub(cameraDirection.clone().multiplyScalar(g_zoomScalar));
+        renderer.render( scene, camera );
+        camera.near -= g_zoomScalar-0.1;
+        updateCamera();
+        controls.enabled = true;
+    }
+    
+}
+
+  const cameraDirection = new THREE.Vector3(); // for moving telescope
+
 	function render( time ) {
 
 		time *= 0.001;
@@ -318,16 +402,23 @@ function main() {
 
 		}
 
+
 		shapes.forEach( ( shape1, ndx ) => {
 
 			const speed = .2 + ndx * .1;
 			const rot = time * speed;
-			shape1.rotation.x = rot;
+			shape1.rotation.x = rot * 0.02;
 			shape1.rotation.y = rot;
+
 
 		} );
 
-		renderer.render( scene, camera );
+    planets.forEach((planet) => {
+      planet.update(time);
+    });
+
+
+    updateBinocularsPosition()
 
 		requestAnimationFrame( render );
 
@@ -335,6 +426,48 @@ function main() {
 
 	requestAnimationFrame( render );
 
+  function updateBinocularsPosition() {
+    camera.getWorldDirection(cameraDirection);
+    const offset = cameraDirection.clone().multiplyScalar(g_zoomScalar);
+    const binocularsPosition = camera.position.clone().add(offset);
+    binocularsOutlineMesh.position.copy(binocularsPosition);
+    binocularsOutlineMesh.rotation.copy(camera.rotation);
+    renderer.render( scene, camera );
+  }
+
+}
+class Planet {
+  constructor(sphereRadius, orbitRadius, height, speed, color, scene, planetTexture) {
+      this.sphereRadius = sphereRadius;
+      this.orbitRadius = orbitRadius;
+      this.height = height;
+      this.speed = speed;
+      this.color = color;
+      this.scene = scene;
+      this.texture = planetTexture;
+
+      this.geometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
+      if (planetTexture) {
+          this.texture = planetTexture;
+          this.material = new THREE.MeshBasicMaterial({ map: this.texture });
+      } 
+      else {
+          this.material = new THREE.MeshBasicMaterial({ color: this.color });
+      }
+
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
+  }
+
+  create() {
+    this.scene.add(this.mesh);
+    return;
+  }
+
+  update(time) {
+      this.mesh.position.x = this.orbitRadius * Math.cos(time * this.speed);
+      this.mesh.position.y = this.height;
+      this.mesh.position.z = this.orbitRadius * Math.sin(time * this.speed);
+  }
 }
 
 main();
